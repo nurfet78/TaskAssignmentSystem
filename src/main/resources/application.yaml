@@ -1,0 +1,38 @@
+server:
+  port: 8888
+spring:
+  application:
+    name: TaskAssignmentSystem
+  datasource:
+    url: ${DB_URL}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    out-of-order: false
+    validate-on-migrate: true
+
+  jpa:
+    show-sql: false
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        default_batch_fetch_size: 50 # коллекции грузятся пачками по 50, а не по одной
+
+  data:
+    web:
+      pageable:
+        default-page-size: 20
+        max-page-size: 100      # защита: клиент не может запросить size=100000
+
+  mvc:
+    hiddenmethod:
+      filter:
+        enabled: true
+
+logging:
+  level:
+    root: info

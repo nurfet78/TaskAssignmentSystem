@@ -1,0 +1,16 @@
+spring:
+  flyway:
+    enabled: true
+    clean-disabled: false
+
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+        highlight_sql: true
+
+logging:
+  level:
+    org.springframework.web: debug
+    org.nurfet.taskassignmentsystem: debug
+    org.hibernate.sql: debug

@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+# Новый коммит в ту же ветку отменяет ещё не завершённый запуск
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      # Заглушки: тесты используют контейнер Testcontainers, но application.yaml
+      # ссылается на эти переменные, и без них Spring не разрешит placeholder-ы.
+      DB_URL: jdbc:postgresql://localhost:5432/taskdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+
+      - name: Make mvnw executable
+        run: chmod +x mvnw
+
+      - name: Build and test
+        run: ./mvnw -B clean verify
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: task-assignment-system:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

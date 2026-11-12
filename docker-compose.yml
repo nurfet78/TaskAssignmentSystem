@@ -1,0 +1,49 @@
+services:
+  app:
+    build: .
+    container_name: task-assignment-app
+    # По умолчанию контейнеры не стартуют вместе с Docker.
+    # На сервере задайте RESTART_POLICY=unless-stopped в .env.
+    # IntelliJ подчёркивает эту строку как "not expected here": подстановка переменных
+    # в Compose допустима, проверить можно командой docker compose config.
+    restart: ${RESTART_POLICY:-no}
+    ports:
+      - "8888:8888"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-taskdb}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      # Swagger в профиле prod выключен. Для локальной проверки задайте SWAGGER_ENABLED=true в .env
+      SPRINGDOC_API_DOCS_ENABLED: ${SWAGGER_ENABLED:-false}
+      SPRINGDOC_SWAGGER_UI_ENABLED: ${SWAGGER_ENABLED:-false}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:${POSTGRES_VERSION:-18}
+    container_name: task-assignment-db
+    restart: ${RESTART_POLICY:-no}
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-taskdb}
+    ports:
+      # Только с локальной машины. DB_PORT: номер порта на хосте (только число!).
+      # Если порт 5432 занят другой базой, задайте например DB_PORT=5433.
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      # Для образа postgres 18 том монтируется в /var/lib/postgresql (не в /data)
+      - pg_data:/var/lib/postgresql
+    shm_size: 128m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-taskdb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  pg_data:
+  
