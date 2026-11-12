@@ -1,6 +1,6 @@
 # Task Assignment System
 
-[![CI](https://github.com/ЛОГИН/ИМЯ_РЕПОЗИТОРИЯ/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nurfet78/TaskAssignmentSystem/actions/workflows/ci.yml)
+[![CI](https://github.com/nurfet78/TaskAssignmentSystem/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nurfet78/TaskAssignmentSystem/actions/workflows/ci.yml)
 
 REST-сервис распределения задач между разработчиками на Spring Boot. Учебный проект: задачи назначаются вручную или автоматически по навыкам и текущей загрузке, а каждое изменение статуса и исполнителя пишется в журнал событий.
 
