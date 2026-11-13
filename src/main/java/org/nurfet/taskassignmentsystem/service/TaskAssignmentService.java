@@ -10,7 +10,6 @@ import org.nurfet.taskassignmentsystem.domain.enums.TaskStatus;
 import org.nurfet.taskassignmentsystem.dto.response.AssignmentResult;
 import org.nurfet.taskassignmentsystem.exception.ResourceNotFoundException;
 import org.nurfet.taskassignmentsystem.exception.TaskAssignmentFailedException;
-import org.nurfet.taskassignmentsystem.mapper.TaskMapper;
 import org.nurfet.taskassignmentsystem.repository.DeveloperRepository;
 import org.nurfet.taskassignmentsystem.repository.TaskRepository;
 import org.nurfet.taskassignmentsystem.repository.TaskStatusEventRepository;
@@ -39,11 +38,11 @@ public class TaskAssignmentService {
     private final TaskRepository taskRepository;
     private final DeveloperRepository developerRepository;
     private final TaskStatusEventRepository eventRepository;
-    private final TaskMapper taskMapper;
 
-    private void recordAssigneeChange(Task task, Developer previousAssignee, String comment) {
+    private void recordAssigneeChange(Task task, TaskStatus previousStatus,
+                                      Developer previousAssignee, String comment) {
         taskRepository.saveAndFlush(task);
-        eventRepository.save(TaskStatusEvent.assigneeChanged(task, previousAssignee, comment));
+        eventRepository.save(TaskStatusEvent.assigneeChanged(task, previousStatus, previousAssignee, comment));
     }
 
     private AssignmentResult applyAutoAssignment(Task task, DeveloperMatchProjection match) {
@@ -64,9 +63,10 @@ public class TaskAssignmentService {
                 match.getRequiredSkills(),
                 match.getActiveTasks());
 
+        TaskStatus previousStatus = task.getStatus();
         Developer previousAssignee = task.getAssignee();
         task.assignTo(developer);
-        recordAssigneeChange(task, previousAssignee,
+        recordAssigneeChange(task, previousStatus, previousAssignee,
                 "Автоматическое назначение (" + matchType + " совпадение навыков)");
 
         return matchType == MatchType.FULL
@@ -121,9 +121,10 @@ public class TaskAssignmentService {
     public void manualAssign(Task task, Developer developer, String comment) {
         log.info("Ручное назначение задачи {} разработчику: {}", task.getTitle(), developer.getId());
 
+        TaskStatus previousStatus = task.getStatus();
         Developer previousAssignee = task.getAssignee();
         task.assignTo(developer);
-        recordAssigneeChange(task, previousAssignee, comment);
+        recordAssigneeChange(task, previousStatus, previousAssignee, comment);
 
         log.info("Задача {} назначена разработчику {}", task.getId(), developer.getId());
     }
@@ -134,9 +135,10 @@ public class TaskAssignmentService {
             return;
         }
 
+        TaskStatus previousStatus = task.getStatus();
         Developer previousAssignee = task.getAssignee();
         task.unassign();
-        recordAssigneeChange(task, previousAssignee, comment);
+        recordAssigneeChange(task, previousStatus, previousAssignee, comment);
 
         log.info("С задачи {} снят исполнитель {}", task.getId(), previousAssignee.getId());
     }

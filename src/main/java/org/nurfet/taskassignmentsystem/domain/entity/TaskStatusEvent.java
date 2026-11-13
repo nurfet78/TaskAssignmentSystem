@@ -106,12 +106,13 @@ public class TaskStatusEvent extends BaseEntity {
         return "Произошла смена исполнителя %s -> %s".formatted(previousAssignee, assignee);
     }
 
-    public static TaskStatusEvent assigneeChanged(Task task, Developer previousAssignee, String comment) {
+    public static TaskStatusEvent assigneeChanged(Task task, TaskStatus previousStatus,
+                                                  Developer previousAssignee, String comment) {
         Developer assignee = task.getAssignee();
 
         return builder()
                 .taskId(task.getId())
-                .previousStatus(task.getStatus())
+                .previousStatus(previousStatus)
                 .newStatus(task.getStatus())
                 .assigneeId(assignee != null ? assignee.getId() : null)
                 .assigneeEmail(assignee != null ? assignee.getEmail() : null)
