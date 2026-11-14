@@ -32,6 +32,7 @@ public abstract class AbstractApiTest extends AbstractIntegrationTest {
     protected static final String SKILLS = "/api/v1/skills";
     protected static final String DEVELOPERS = "/api/v1/developers";
     protected static final String TASKS = "/api/v1/tasks";
+    protected static final String REPORTS = "/api/v1/reports";
 
     @Autowired
     private WebTestClient webTestClient;
