@@ -7,6 +7,7 @@ import org.nurfet.taskassignmentsystem.domain.enums.TaskStatus;
 import org.nurfet.taskassignmentsystem.dto.response.PriorityCompletionStats;
 import org.nurfet.taskassignmentsystem.dto.response.TaskStatisticsResponse;
 import org.nurfet.taskassignmentsystem.dto.response.TaskStatusShare;
+import org.nurfet.taskassignmentsystem.dto.response.UnassignableTaskResponse;
 import org.nurfet.taskassignmentsystem.repository.ReportRepository;
 import org.nurfet.taskassignmentsystem.repository.projection.PriorityCompletionProjection;
 import org.springframework.stereotype.Service;
@@ -65,5 +66,16 @@ public class ReportService {
                 .toList();
 
         return new TaskStatisticsResponse(total, byStatus, byPriority);
+    }
+
+    @Transactional(readOnly = true)
+    public List<UnassignableTaskResponse> getUnassignableTasks() {
+        return reportRepository.findUnassignableTasks().stream()
+                .map(row -> new UnassignableTaskResponse(
+                        row.getTaskId(),
+                        row.getTitle(),
+                        TaskPriority.valueOf(row.getPriority()),
+                        row.getRequiredSkillsCount()))
+                .toList();
     }
 }

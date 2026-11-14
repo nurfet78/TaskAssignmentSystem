@@ -513,5 +513,4 @@ public class ServiceIntegrationTest extends AbstractIntegrationTest {
         assertEquals(TaskStatus.IN_PROGRESS, last.previousStatus());
         assertEquals(TaskStatus.NEW, last.newStatus());
     }
-
 }

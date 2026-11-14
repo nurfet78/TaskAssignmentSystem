@@ -122,4 +122,56 @@ public class ReportApiIntegrationTest extends AbstractApiTest {
                 .jsonPath("$.completionByPriority[3].priority").isEqualTo("LOW");
     }
 
+    /////////////////////////////////////////
+
+    @Test
+    void unassignable_listsOnlyTasksWithoutSuitableDeveloper_byPriority() {
+        long java = createSkill("Java");
+        long spring = createSkill("Spring");
+        long go = createSkill("Go");
+        createDeveloper("active@example.com", java);
+        long inactive = createDeveloper("inactive@example.com", spring);
+        setActive(inactive, false).expectStatus().isOk();
+
+        long needsGo = createTaskWithPriority("Needs Go", "CRITICAL", go);          // никто не владеет
+        long onlyInactive = createTaskWithPriority("Needs Spring", "HIGH", spring); // владеет только неактивный
+        createTaskWithPriority("Partial", "MEDIUM", java, spring);                  // частичное совпадение есть
+        createTask("No skills");                                                    // без навыков
+        changeStatus(createTaskWithPriority("Cancelled", "LOW", go), "CANCELLED");  // не NEW
+
+        get(REPORTS + "/tasks/unassignable")
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.length()").isEqualTo(2)
+                .jsonPath("$[0].taskId").isEqualTo(needsGo)
+                .jsonPath("$[0].requiredSkillsCount").isEqualTo(1)
+                .jsonPath("$[1].taskId").isEqualTo(onlyInactive);
+    }
+
+    @Test
+    void unassignable_agreesWithAutoAssign() {
+        long java = createSkill("Java");
+        long spring = createSkill("Spring");
+        long go = createSkill("Go");
+        createDeveloper("dev@example.com", java);
+
+        long assignable = createTask("Partial match", java, spring);
+        long unassignable = createTask("No match", go);
+
+        get(REPORTS + "/tasks/unassignable")
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.length()").isEqualTo(1)
+                .jsonPath("$[0].taskId").isEqualTo(unassignable);
+
+        postEmpty(TASKS + "/{id}/auto-assign", unassignable).expectStatus().isEqualTo(409);
+        postEmpty(TASKS + "/{id}/auto-assign", assignable).expectStatus().isOk();
+    }
+
+    @Test
+    void unassignable_emptyDatabase_returnsEmptyList() {
+        get(REPORTS + "/tasks/unassignable")
+                .expectStatus().isOk()
+                .expectBody().jsonPath("$.length()").isEqualTo(0);
+    }
 }

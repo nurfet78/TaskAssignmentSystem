@@ -4,12 +4,15 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.nurfet.taskassignmentsystem.dto.response.TaskStatisticsResponse;
+import org.nurfet.taskassignmentsystem.dto.response.UnassignableTaskResponse;
 import org.nurfet.taskassignmentsystem.service.ReportService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/reports")
@@ -26,6 +29,15 @@ public class ReportController {
     @GetMapping("/tasks/statistics")
     public ResponseEntity<TaskStatisticsResponse> getTaskStatistics() {
         return ResponseEntity.ok(reportService.getTaskStatistics());
+    }
+
+    @Operation(summary = "Задачи без подходящего исполнителя",
+            description = "Задачи NEW без исполнителя и с навыками, для которых нет ни одного активного "
+                    + "разработчика хотя бы с одним требуемым навыком. Для них автоназначение вернёт 409. "
+                    + "Список целиком, по приоритету.")
+    @GetMapping("/tasks/unassignable")
+    public ResponseEntity<List<UnassignableTaskResponse>> getUnassignableTasks() {
+        return ResponseEntity.ok(reportService.getUnassignableTasks());
     }
 
 }
