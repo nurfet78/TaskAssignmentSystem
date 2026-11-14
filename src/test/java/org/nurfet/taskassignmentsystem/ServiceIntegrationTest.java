@@ -7,6 +7,7 @@ import org.nurfet.taskassignmentsystem.domain.enums.TaskStatus;
 import org.nurfet.taskassignmentsystem.dto.request.*;
 import org.nurfet.taskassignmentsystem.dto.response.DeveloperResponse;
 import org.nurfet.taskassignmentsystem.dto.response.SkillResponse;
+import org.nurfet.taskassignmentsystem.dto.response.TaskEventResponse;
 import org.nurfet.taskassignmentsystem.dto.response.TaskResponse;
 import org.nurfet.taskassignmentsystem.exception.*;
 import org.nurfet.taskassignmentsystem.service.DeveloperService;
@@ -485,4 +486,32 @@ public class ServiceIntegrationTest extends AbstractIntegrationTest {
                 "select count(*) from developer_skills where developer_id = ? and skill_id = ?",
                 Integer.class, dev.id(), spring.id()));
     }
+
+    @Test
+    void task_assign_logsTransitionFromNewToInProgress() {
+        SkillResponse java = createSkill("Java");
+        DeveloperResponse dev = createDeveloper("dev@wxample.com", java.id());
+        TaskResponse task = createTask("Task", java.id());
+
+        assign(task, dev);
+
+        // история отсортирована от новых к старым: первое событие это назначение
+        TaskEventResponse last = taskService.getHistory(task.id()).getFirst();
+        assertEquals(TaskStatus.NEW, last.previousStatus());
+        assertEquals(TaskStatus.IN_PROGRESS, last.newStatus());
+    }
+
+    @Test
+    void task_unassign_logsTransitionFromInProgressToNew() {
+        SkillResponse java = createSkill("Java");
+        DeveloperResponse dev = createDeveloper("dev@example.com", java.id());
+        TaskResponse assigned = assign(createTask("Task", java.id()), dev);
+
+        taskService.unassign(assigned.id(), assigned.version(), null);
+
+        TaskEventResponse last = taskService.getHistory(assigned.id()).getFirst();
+        assertEquals(TaskStatus.IN_PROGRESS, last.previousStatus());
+        assertEquals(TaskStatus.NEW, last.newStatus());
+    }
+
 }
