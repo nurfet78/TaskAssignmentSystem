@@ -59,7 +59,7 @@ public class OpenApiConfig {
                         .url("https://github.com/nurfet78/TaskAssignmentSystem"))
                 .servers(List.of(
                         new Server()
-                                .url("http://localhost:8080")
+                                .url("http://localhost:8888")
                                 .description("Local environment")
                 ))
                 .tags(List.of(
