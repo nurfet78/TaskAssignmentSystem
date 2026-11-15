@@ -3,10 +3,13 @@ package org.nurfet.taskassignmentsystem.repository;
 import org.nurfet.taskassignmentsystem.domain.entity.Task;
 import org.nurfet.taskassignmentsystem.repository.projection.PriorityCompletionProjection;
 import org.nurfet.taskassignmentsystem.repository.projection.StatusCountProjection;
+import org.nurfet.taskassignmentsystem.repository.projection.StatusDurationProjection;
 import org.nurfet.taskassignmentsystem.repository.projection.UnassignableTaskProjection;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
+import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.List;
 
 @org.springframework.stereotype.Repository
@@ -64,4 +67,42 @@ public interface ReportRepository extends Repository<Task, Long> {
         t.created_at, t.id
 """, nativeQuery = true)
     List<UnassignableTaskProjection> findUnassignableTasks();
+
+    /*
+     * События смены исполнителя (previous_status = new_status) не меняют статус,
+     * их убираем до lead(): иначе они рвали бы интервал и считались новым входом в статус.
+     * Событие создания (previous_status is null) остаётся.
+     * Конечный статус (DONE, CANCELLED) не имеет конца, поэтому время в нём не считаем (null).
+     * Текущий момент передаётся параметром :now.
+     */
+    @Query(value = """
+    with status_changes as (
+        select id, new_status, occurred_at
+        from task_status_events
+        where task_id = :taskId
+          and (previous_status is null or previous_status <> new_status)
+    ),
+    intervals as (
+        select
+            new_status,
+            occurred_at,
+            lead(occurred_at) over (order by occurred_at, id) as left_at
+        from status_changes
+    )
+    select
+        new_status as status,
+        count(*) as timesEntered,
+        cast(sum(
+            case
+                when left_at is null and new_status in ('DONE', 'CANCELLED') then null
+                else extract(epoch from (coalesce(left_at, cast(:now as timestamptz)) - occurred_at))
+            end
+        ) as bigint) as totalSeconds,
+        bool_or(left_at is null) as isCurrent
+    from intervals
+    group by new_status
+    order by min(occurred_at)
+""", nativeQuery = true)
+    List<StatusDurationProjection> findStatusDurations(@Param("taskId") Long taskId,
+                                                       @Param("now") Instant now);
 }

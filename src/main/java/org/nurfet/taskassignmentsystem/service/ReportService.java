@@ -4,17 +4,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nurfet.taskassignmentsystem.domain.enums.TaskPriority;
 import org.nurfet.taskassignmentsystem.domain.enums.TaskStatus;
-import org.nurfet.taskassignmentsystem.dto.response.PriorityCompletionStats;
-import org.nurfet.taskassignmentsystem.dto.response.TaskStatisticsResponse;
-import org.nurfet.taskassignmentsystem.dto.response.TaskStatusShare;
-import org.nurfet.taskassignmentsystem.dto.response.UnassignableTaskResponse;
+import org.nurfet.taskassignmentsystem.dto.response.*;
+import org.nurfet.taskassignmentsystem.exception.ResourceNotFoundException;
 import org.nurfet.taskassignmentsystem.repository.ReportRepository;
+import org.nurfet.taskassignmentsystem.repository.TaskRepository;
 import org.nurfet.taskassignmentsystem.repository.projection.PriorityCompletionProjection;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.*;
 
 @Service
@@ -23,6 +24,8 @@ import java.util.*;
 public class ReportService {
 
     private final ReportRepository reportRepository;
+    private final TaskRepository taskRepository;
+    private final Clock clock;
 
     private static BigDecimal percent(long part, long total) {
         if (total == 0) {
@@ -78,4 +81,26 @@ public class ReportService {
                         row.getRequiredSkillsCount()))
                 .toList();
     }
+
+    @Transactional(readOnly = true)
+    public List<StatusDurationResponse> getStatusDurations(Long taskId) {
+        return getStatusDurations(taskId, Instant.now(clock));
+    }
+
+    /** Вариант с явным «сейчас»: нужен тестам с точными числами. */
+    @Transactional(readOnly = true)
+    public List<StatusDurationResponse> getStatusDurations(Long taskId, Instant now) {
+        if (!taskRepository.existsById(taskId)) {
+            throw ResourceNotFoundException.task(taskId);
+        }
+
+        return reportRepository.findStatusDurations(taskId, now).stream()
+                .map(row -> new StatusDurationResponse(
+                        TaskStatus.valueOf(row.getStatus()),
+                        row.getTimesEntered(),
+                        row.getTotalSeconds(),
+                        Boolean.TRUE.equals(row.getIsCurrent())))
+                .toList();
+    }
+
 }
