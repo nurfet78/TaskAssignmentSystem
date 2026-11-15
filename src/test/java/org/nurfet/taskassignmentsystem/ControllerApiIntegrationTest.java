@@ -492,4 +492,72 @@ class ControllerApiIntegrationTest extends AbstractApiTest {
 
         assertEquals(404, code);
     }
+
+    ///////////////////////////////
+
+    @Test
+    void candidates_ranksLikeAutoAssign_andChangesNothing() {
+        long java = createSkill("Java");
+        long spring = createSkill("Spring");
+        long full = createDeveloper("full@example.com", java, spring);
+        long free = createDeveloper("free@example.com", java, spring);
+        long partial = createDeveloper("partial@example.com", java);
+        long inactive = createDeveloper("inactive@example.com", java, spring);
+        setActive(inactive, false).expectStatus().isOk();
+
+        assign(createTask("Busy", java), full).expectStatus().isOk();
+        long task = createTask("Target", java, spring);
+
+        // FULL с меньшей загрузкой, затем FULL с большей, затем PARTIAL; неактивный не входит
+        get(TASKS + "/{id}/candidates", task)
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.length()").isEqualTo(3)
+                .jsonPath("$[0].developerId").isEqualTo(free)
+                .jsonPath("$[0].matchType").isEqualTo("FULL")
+                .jsonPath("$[0].activeTasks").isEqualTo(0)
+                .jsonPath("$[1].developerId").isEqualTo(full)
+                .jsonPath("$[1].activeTasks").isEqualTo(1)
+                .jsonPath("$[2].developerId").isEqualTo(partial)
+                .jsonPath("$[2].matchType").isEqualTo("PARTIAL")
+                .jsonPath("$[2].matchedSkills").isEqualTo(1)
+                .jsonPath("$[2].requiredSkills").isEqualTo(2);
+
+        get(TASKS + "/{id}/candidates?limit=1", task)
+                .expectStatus().isOk()
+                .expectBody().jsonPath("$.length()").isEqualTo(1);
+
+        // пробный запуск ничего не назначил
+        get(TASKS + "/{id}", task)
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo("NEW")
+                .jsonPath("$.assignee").isEmpty();
+
+        // реальное автоназначение выбирает первого кандидата
+        postEmpty(TASKS + "/{id}/auto-assign", task).expectStatus().isOk();
+        get(TASKS + "/{id}", task)
+                .expectStatus().isOk()
+                .expectBody().jsonPath("$.assignee.id").isEqualTo(free);
+    }
+
+    @Test
+    void candidates_taskWithoutSkills_returnsEmptyList_andUnknownTaskReturns404() {
+        createDeveloper("dev@example.com");
+        long task = createTask("No skills");
+
+        get(TASKS + "/{id}/candidates", task)
+                .expectStatus().isOk()
+                .expectBody().jsonPath("$.length()").isEqualTo(0);
+
+        get(TASKS + "/{id}/candidates", 999).expectStatus().isNotFound();
+    }
+
+    @Test
+    void candidates_invalidLimit_returns400() {
+        long task = createTask("Task");
+
+        get(TASKS + "/{id}/candidates?limit=0", task).expectStatus().isBadRequest();
+        get(TASKS + "/{id}/candidates?limit=21", task).expectStatus().isBadRequest();
+    }
 }

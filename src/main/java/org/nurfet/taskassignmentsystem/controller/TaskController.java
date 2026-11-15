@@ -4,6 +4,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.nurfet.taskassignmentsystem.domain.enums.TaskStatus;
@@ -11,10 +13,7 @@ import org.nurfet.taskassignmentsystem.dto.request.AssignTaskRequest;
 import org.nurfet.taskassignmentsystem.dto.request.ChangeStatusRequest;
 import org.nurfet.taskassignmentsystem.dto.request.CreateTaskRequest;
 import org.nurfet.taskassignmentsystem.dto.request.UpdateTaskRequest;
-import org.nurfet.taskassignmentsystem.dto.response.AssignmentResult;
-import org.nurfet.taskassignmentsystem.dto.response.PageResponse;
-import org.nurfet.taskassignmentsystem.dto.response.TaskEventResponse;
-import org.nurfet.taskassignmentsystem.dto.response.TaskResponse;
+import org.nurfet.taskassignmentsystem.dto.response.*;
 import org.nurfet.taskassignmentsystem.service.TaskService;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
@@ -149,4 +148,20 @@ public class TaskController {
         taskService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    @Operation(summary = "Кандидаты на задачу (пробное автоназначение)",
+            description = "Показывает, кого выбрало бы автоназначение, ничего не меняя: сначала полное "
+                    + "совпадение навыков, затем больше совпадений, затем меньше активных задач. "
+                    + "Пустой список, если у задачи нет навыков или нет подходящих активных разработчиков. "
+                    + "К моменту реального назначения результат может измениться.")
+    @ApiResponse(responseCode = "404", description = "Задача не найдена")
+    @ApiResponse(responseCode = "400", description = "Недопустимый limit")
+    @GetMapping("/{id}/candidates")
+    public ResponseEntity<List<CandidateResponse>> getCandidates(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "5") @Min(1) @Max(20) int limit) {
+
+        return ResponseEntity.ok(taskService.getCandidates(id, limit));
+    }
+
 }

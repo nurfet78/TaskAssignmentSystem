@@ -8,6 +8,7 @@ import org.nurfet.taskassignmentsystem.domain.entity.TaskStatusEvent;
 import org.nurfet.taskassignmentsystem.domain.enums.MatchType;
 import org.nurfet.taskassignmentsystem.domain.enums.TaskStatus;
 import org.nurfet.taskassignmentsystem.dto.response.AssignmentResult;
+import org.nurfet.taskassignmentsystem.dto.response.CandidateResponse;
 import org.nurfet.taskassignmentsystem.exception.ResourceNotFoundException;
 import org.nurfet.taskassignmentsystem.exception.TaskAssignmentFailedException;
 import org.nurfet.taskassignmentsystem.repository.DeveloperRepository;
@@ -141,5 +142,19 @@ public class TaskAssignmentService {
         recordAssigneeChange(task, previousStatus, previousAssignee, comment);
 
         log.info("С задачи {} снят исполнитель {}", task.getId(), previousAssignee.getId());
+    }
+
+    @Transactional(readOnly = true)
+    public List<CandidateResponse> findCandidates(Long taskId, int limit) {
+        return developerRepository.findBestCandidatesForTask(taskId, limit).stream()
+                .map(c -> new CandidateResponse(
+                        c.getDeveloperId(),
+                        c.getFirstName() + " " + c.getLastName(),
+                        c.getEmail(),
+                        Boolean.TRUE.equals(c.getIsExactMatch()) ? MatchType.FULL : MatchType.PARTIAL,
+                        c.getMatchedSkills(),
+                        c.getRequiredSkills(),
+                        c.getActiveTasks()))
+                .toList();
     }
 }

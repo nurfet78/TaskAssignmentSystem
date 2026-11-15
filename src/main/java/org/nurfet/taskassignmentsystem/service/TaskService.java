@@ -8,10 +8,7 @@ import org.nurfet.taskassignmentsystem.domain.entity.Task;
 import org.nurfet.taskassignmentsystem.domain.entity.TaskStatusEvent;
 import org.nurfet.taskassignmentsystem.domain.enums.TaskStatus;
 import org.nurfet.taskassignmentsystem.dto.request.*;
-import org.nurfet.taskassignmentsystem.dto.response.AssignmentResult;
-import org.nurfet.taskassignmentsystem.dto.response.PageResponse;
-import org.nurfet.taskassignmentsystem.dto.response.TaskEventResponse;
-import org.nurfet.taskassignmentsystem.dto.response.TaskResponse;
+import org.nurfet.taskassignmentsystem.dto.response.*;
 import org.nurfet.taskassignmentsystem.exception.EntityConcurrentModificationException;
 import org.nurfet.taskassignmentsystem.exception.InvalidTaskStateException;
 import org.nurfet.taskassignmentsystem.exception.ResourceNotFoundException;
@@ -246,5 +243,14 @@ public class TaskService {
 
         taskRepository.delete(task);
         log.info("Задача {} удалена", id);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CandidateResponse> getCandidates(Long id, int limit) {
+        if (!taskRepository.existsById(id)) {
+            throw ResourceNotFoundException.task(id);
+        }
+
+        return assignmentService.findCandidates(id, limit);
     }
 }
