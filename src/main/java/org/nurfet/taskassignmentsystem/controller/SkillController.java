@@ -68,12 +68,14 @@ public class SkillController {
         return ResponseEntity.ok(skillService.getByName(name));
     }
 
-    @Operation(summary = "Получить все навыки")
+    @Operation(summary = "Получить все навыки",
+            description = "q: подстрока в названии без учёта регистра.")
     @GetMapping
     public ResponseEntity<PageResponse<SkillResponse>> getAll(
+            @RequestParam(required = false) @Size(max = 100) String q,
             @ParameterObject @PageableDefault(size = 20, sort = "name") Pageable pageable) {
 
-        return ResponseEntity.ok(skillService.getAll(pageable));
+        return ResponseEntity.ok(skillService.getAll(q, pageable));
     }
 
     @Operation(summary = "Удаление навыка",

@@ -1,5 +1,7 @@
 package org.nurfet.taskassignmentsystem.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import org.nurfet.taskassignmentsystem.domain.entity.Skill;
@@ -29,4 +31,6 @@ public interface SkillRepository extends JpaRepository<Skill, Long> {
             or exists(select 1 from task_skills where skill_id = :skillId)
     """, nativeQuery = true)
     boolean isInUse(@Param("skillId") Long skillId);
+
+    Page<Skill> findByNameContainingIgnoreCase(String q, Pageable pageable);
 }

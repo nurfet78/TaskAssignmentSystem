@@ -161,10 +161,15 @@ public class SkillService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<SkillResponse> getAll(Pageable pageable) {
+    public PageResponse<SkillResponse> getAll(String q, Pageable pageable) {
         Validate.validateSort(pageable, SORTABLE_FIELDS);
+        Pageable stable = Validate.withIdTiebreaker(pageable);
 
-        Page<Skill> page = skillRepository.findAll(Validate.withIdTiebreaker(pageable));
+        String query = q == null ? "" : q.strip();
+        Page<Skill> page = query.isEmpty()
+                ? skillRepository.findAll(stable)
+                : skillRepository.findByNameContainingIgnoreCase(query, stable);
+
         return PageResponse.of(skillMapper.toResponseList(page.getContent()), page);
     }
 
