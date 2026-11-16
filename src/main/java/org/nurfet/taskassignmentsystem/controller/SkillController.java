@@ -11,6 +11,7 @@ import org.nurfet.taskassignmentsystem.dto.request.CreateSkillRequest;
 import org.nurfet.taskassignmentsystem.dto.request.UpdateSkillRequest;
 import org.nurfet.taskassignmentsystem.dto.response.PageResponse;
 import org.nurfet.taskassignmentsystem.dto.response.SkillResponse;
+import org.nurfet.taskassignmentsystem.dto.response.SkillUsageResponse;
 import org.nurfet.taskassignmentsystem.service.SkillService;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
@@ -76,6 +77,15 @@ public class SkillController {
             @ParameterObject @PageableDefault(size = 20, sort = "name") Pageable pageable) {
 
         return ResponseEntity.ok(skillService.getAll(q, pageable));
+    }
+
+    @Operation(summary = "Где используется навык",
+            description = "Число разработчиков и задач (в любом статусе), использующих навык. "
+                    + "Если inUse = true, удаление вернёт 409.")
+    @ApiResponse(responseCode = "404", description = "Навык не найден")
+    @GetMapping("/{id}/usage")
+    public ResponseEntity<SkillUsageResponse> getUsage(@PathVariable Long id) {
+        return ResponseEntity.ok(skillService.getUsage(id));
     }
 
     @Operation(summary = "Удаление навыка",

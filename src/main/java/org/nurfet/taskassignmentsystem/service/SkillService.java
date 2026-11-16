@@ -7,11 +7,13 @@ import org.nurfet.taskassignmentsystem.dto.request.CreateSkillRequest;
 import org.nurfet.taskassignmentsystem.dto.request.UpdateSkillRequest;
 import org.nurfet.taskassignmentsystem.dto.response.PageResponse;
 import org.nurfet.taskassignmentsystem.dto.response.SkillResponse;
+import org.nurfet.taskassignmentsystem.dto.response.SkillUsageResponse;
 import org.nurfet.taskassignmentsystem.exception.DuplicateResourceException;
 import org.nurfet.taskassignmentsystem.exception.ResourceInUseException;
 import org.nurfet.taskassignmentsystem.exception.ResourceNotFoundException;
 import org.nurfet.taskassignmentsystem.mapper.SkillMapper;
 import org.nurfet.taskassignmentsystem.repository.SkillRepository;
+import org.nurfet.taskassignmentsystem.repository.projection.SkillUsageProjection;
 import org.nurfet.taskassignmentsystem.util.Validate;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -171,6 +173,17 @@ public class SkillService {
                 : skillRepository.findByNameContainingIgnoreCase(query, stable);
 
         return PageResponse.of(skillMapper.toResponseList(page.getContent()), page);
+    }
+
+    @Transactional(readOnly = true)
+    public SkillUsageResponse getUsage(Long id) {
+        findById(id); // 404 для неизвестного навыка
+
+        SkillUsageProjection usage = skillRepository.getUsage(id);
+        long developers = usage.getDevelopersCount();
+        long tasks = usage.getTasksCount();
+
+        return new SkillUsageResponse(developers, tasks, developers + tasks > 0);
     }
 
     @Transactional

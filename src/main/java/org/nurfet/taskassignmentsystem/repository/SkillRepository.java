@@ -1,5 +1,6 @@
 package org.nurfet.taskassignmentsystem.repository;
 
+import org.nurfet.taskassignmentsystem.repository.projection.SkillUsageProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -33,4 +34,10 @@ public interface SkillRepository extends JpaRepository<Skill, Long> {
     boolean isInUse(@Param("skillId") Long skillId);
 
     Page<Skill> findByNameContainingIgnoreCase(String q, Pageable pageable);
+
+    @Query(value = """
+    select (select count(*) from developer_skills where skill_id = :skillId) as developersCount,
+           (select count(*) from task_skills      where skill_id = :skillId) as tasksCount
+""", nativeQuery = true)
+    SkillUsageProjection getUsage(@Param("skillId") Long skillId);
 }

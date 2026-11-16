@@ -560,4 +560,49 @@ class ControllerApiIntegrationTest extends AbstractApiTest {
         get(TASKS + "/{id}/candidates?limit=0", task).expectStatus().isBadRequest();
         get(TASKS + "/{id}/candidates?limit=21", task).expectStatus().isBadRequest();
     }
+
+    @Test
+    void skill_usage_countsDevelopersAndTasks() {
+        long java = createSkill("Java");
+        createDeveloper("a@example.com", java);
+        createDeveloper("b@example.com", java);
+        createTask("Task", java);
+
+        get(SKILLS + "/{id}/usage", java)
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.developersCount").isEqualTo(2)
+                .jsonPath("$.tasksCount").isEqualTo(1)
+                .jsonPath("$.inUse").isEqualTo(true);
+    }
+
+    @Test
+    void skill_usage_unused_returnsZeros() {
+        long java = createSkill("Java");
+
+        get(SKILLS + "/{id}/usage", java)
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.developersCount").isEqualTo(0)
+                .jsonPath("$.tasksCount").isEqualTo(0)
+                .jsonPath("$.inUse").isEqualTo(false);
+    }
+
+    @Test
+    void skill_usage_unknown_returns404() {
+        get(SKILLS + "/{id}/usage", 999).expectStatus().isNotFound();
+    }
+
+    @Test
+    void skill_usage_agreesWithDelete() {
+        long used = createSkill("Used");
+        long free = createSkill("Free");
+        createTask("Task", used);
+
+        get(SKILLS + "/{id}/usage", used).expectBody().jsonPath("$.inUse").isEqualTo(true);
+        delete(SKILLS + "/{id}", used).expectStatus().isEqualTo(409);
+
+        get(SKILLS + "/{id}/usage", free).expectBody().jsonPath("$.inUse").isEqualTo(false);
+        delete(SKILLS + "/{id}", free).expectStatus().isNoContent();
+    }
 }
