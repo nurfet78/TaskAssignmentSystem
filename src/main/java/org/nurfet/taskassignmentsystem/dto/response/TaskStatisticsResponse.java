@@ -12,6 +12,10 @@ public record TaskStatisticsResponse(
         @Schema(description = "Распределение по статусам. Присутствуют все статусы, в том числе с нулём задач")
         List<TaskStatusShare> byStatus,
 
+        @Schema(description = "Распределение всех задач по приоритетам, от CRITICAL к LOW. "
+                + "Присутствуют все приоритеты, в том числе с нулём задач")
+        List<PriorityShare> byPriority,
+
         @Schema(description = "Время выполнения по приоритетам, от CRITICAL к LOW. "
                 + "Учитываются только задачи в статусе DONE; отменённые не входят, "
                 + "хотя у них тоже заполнен completedAt")

@@ -53,6 +53,18 @@ public class ReportService {
                 })
                 .toList();
 
+        Map<TaskPriority, Long> priorityCounts = new EnumMap<>(TaskPriority.class);
+        reportRepository.countTasksByPriority().forEach(row ->
+                priorityCounts.put(TaskPriority.valueOf(row.getPriority()), row.getTaskCount()));
+
+        List<PriorityShare> distribution = Arrays.stream(TaskPriority.values())
+                .sorted(Comparator.comparingInt(TaskPriority::getWeight).reversed())
+                .map(priority -> {
+                    long count = priorityCounts.getOrDefault(priority, 0L);
+                    return new PriorityShare(priority, count, percent(count, total));
+                })
+                .toList();
+
         Map<TaskPriority, PriorityCompletionProjection> completion = new EnumMap<>(TaskPriority.class);
         reportRepository.findCompletionStatsByPriority().forEach(row ->
                 completion.put(TaskPriority.valueOf(row.getPriority()), row));
@@ -68,7 +80,7 @@ public class ReportService {
                 })
                 .toList();
 
-        return new TaskStatisticsResponse(total, byStatus, byPriority);
+        return new TaskStatisticsResponse(total, byStatus, distribution, byPriority);
     }
 
     @Transactional(readOnly = true)

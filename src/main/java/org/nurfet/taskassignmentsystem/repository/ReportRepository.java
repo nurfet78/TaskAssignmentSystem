@@ -1,10 +1,7 @@
 package org.nurfet.taskassignmentsystem.repository;
 
 import org.nurfet.taskassignmentsystem.domain.entity.Task;
-import org.nurfet.taskassignmentsystem.repository.projection.PriorityCompletionProjection;
-import org.nurfet.taskassignmentsystem.repository.projection.StatusCountProjection;
-import org.nurfet.taskassignmentsystem.repository.projection.StatusDurationProjection;
-import org.nurfet.taskassignmentsystem.repository.projection.UnassignableTaskProjection;
+import org.nurfet.taskassignmentsystem.repository.projection.*;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
@@ -105,4 +102,12 @@ public interface ReportRepository extends Repository<Task, Long> {
 """, nativeQuery = true)
     List<StatusDurationProjection> findStatusDurations(@Param("taskId") Long taskId,
                                                        @Param("now") Instant now);
+
+    @Query(value = """
+    select priority as priority,
+           count(*) as taskCount
+    from tasks
+    group by priority
+""", nativeQuery = true)
+    List<PriorityCountProjection> countTasksByPriority();
 }
