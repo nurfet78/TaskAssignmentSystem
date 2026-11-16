@@ -464,4 +464,34 @@ class PaginationApiIntegrationTest extends AbstractApiTest {
         get(DEVELOPERS + "?q=nobody").expectStatus().isOk()
                 .expectBody().jsonPath("$.totalElements").isEqualTo(0);
     }
+
+    @Test
+    void skills_search_ignoresCase() {
+        createSkill("Java");
+        createSkill("JavaScript");
+        createSkill("Python");
+
+        get(SKILLS + "?q=JAVA").expectStatus().isOk()
+                .expectBody().jsonPath("$.totalElements").isEqualTo(2);
+        get(SKILLS + "?q=thon").expectStatus().isOk()
+                .expectBody().jsonPath("$.totalElements").isEqualTo(1);
+    }
+
+    @Test
+    void skills_search_wildcardsAreLiteral() {
+        createSkill("C++");
+        createSkill("C#");
+        createSkill("100%");
+
+        get(SKILLS + "?q={q}", "%").expectStatus().isOk()
+                .expectBody().jsonPath("$.totalElements").isEqualTo(1);
+    }
+
+    @Test
+    void skills_search_blankQueryReturnsAll() {
+        createSkills(3);
+
+        get(SKILLS + "?q={q}", " ").expectStatus().isOk()
+                .expectBody().jsonPath("$.totalElements").isEqualTo(3);
+    }
 }
