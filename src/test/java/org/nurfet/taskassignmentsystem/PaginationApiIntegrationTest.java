@@ -277,4 +277,31 @@ class PaginationApiIntegrationTest extends AbstractApiTest {
     void skills_unknownSortField_returns400() {
         get(SKILLS + "?sort=nope").expectStatus().isBadRequest();
     }
+
+    @Test
+    void tasks_sortByTitleWithDuplicates_noLossOrRepeat() {
+        for (int i = 0; i < 25; i++) {
+            createTask("Same title");
+        }
+
+        List<Long> ids = new java.util.ArrayList<>();
+        for (int page = 0; page < 3; page++) {
+            ids.addAll(idsOf(get(TASKS + "?sort=title,asc&page={p}&size=10", page)));
+        }
+
+        assertEquals(25, new HashSet<>(ids).size(), "есть дубли или потери");
+        assertEquals(ids.stream().sorted().toList(), ids, "внутри равных ключей порядок по id");
+    }
+
+    @Test
+    void developers_sortByActiveWithDuplicates_noLossOrRepeat() {
+        createDevelopers(25);
+
+        List<Long> ids = new java.util.ArrayList<>();
+        for (int page = 0; page < 3; page++) {
+            ids.addAll(idsOf(get(DEVELOPERS + "?sort=active&page={p}&size=10", page)));
+        }
+
+        assertEquals(25, new HashSet<>(ids).size());
+    }
 }

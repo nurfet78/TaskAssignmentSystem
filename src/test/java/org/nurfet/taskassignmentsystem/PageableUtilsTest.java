@@ -1,9 +1,5 @@
 package org.nurfet.taskassignmentsystem;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
@@ -11,6 +7,8 @@ import org.nurfet.taskassignmentsystem.util.Validate;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /** Юнит-тест */
 class PageableUtilsTest {
@@ -47,5 +45,39 @@ class PageableUtilsTest {
 
         assertThrows(IllegalArgumentException.class,
                 () -> Validate.validateSort(pageable, ALLOWED));
+    }
+
+    @Test
+    void tiebreaker_addsIdAfterExistingSort() {
+        Pageable p = Validate.withIdTiebreaker(PageRequest.of(1, 10,
+                Sort.by(Sort.Direction.DESC, "title")));
+
+        var orders = p.getSort().toList();
+        assertEquals(2, orders.size());
+        assertEquals("title", orders.get(0).getProperty());
+        assertEquals(Sort.Direction.DESC, orders.get(0).getDirection());
+        assertEquals("id", orders.get(1).getProperty());
+        assertEquals(1, p.getPageNumber());
+        assertEquals(10, p.getPageSize());
+    }
+
+    @Test
+    void tiebreaker_unsorted_getsIdOnly() {
+        Pageable p = Validate.withIdTiebreaker(PageRequest.of(0, 20));
+
+        assertEquals(1, p.getSort().toList().size());
+        assertEquals("id", p.getSort().toList().getFirst().getProperty());
+    }
+
+    @Test
+    void tiebreaker_idAlreadyPresent_returnsSameInstance() {
+        Pageable original = PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "createdAt", "id"));
+
+        assertSame(original, Validate.withIdTiebreaker(original));
+    }
+
+    @Test
+    void tiebreaker_unpaged_returnsSameInstance() {
+        assertSame(Pageable.unpaged(), Validate.withIdTiebreaker(Pageable.unpaged()));
     }
 }
