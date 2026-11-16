@@ -16,6 +16,7 @@ import org.nurfet.taskassignmentsystem.exception.ResourceNotFoundException;
 import org.nurfet.taskassignmentsystem.mapper.DeveloperMapper;
 import org.nurfet.taskassignmentsystem.repository.DeveloperRepository;
 import org.nurfet.taskassignmentsystem.repository.TaskRepository;
+import org.nurfet.taskassignmentsystem.repository.spec.DeveloperSpecifications;
 import org.nurfet.taskassignmentsystem.util.Validate;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -189,15 +190,13 @@ public class DeveloperService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<DeveloperResponse> getAll(boolean activeOnly, Pageable pageable) {
+    public PageResponse<DeveloperResponse> getAll(boolean activeOnly, String q, Pageable pageable) {
         Validate.validateSort(pageable, SORTABLE_FIELDS);
         Pageable stable = Validate.withIdTiebreaker(pageable);
 
-        Page<Developer> page = activeOnly
-                ? developerRepository.findByActiveTrue(stable)
-                : developerRepository.findAll(stable);
+        Page<Developer> page = developerRepository.findAll(
+                DeveloperSpecifications.byFilter(activeOnly, q), stable);
 
-        // toResponses считает активные задачи одним запросом для всех разработчиков страницы
         return PageResponse.of(toResponses(page.getContent()), page);
     }
 
