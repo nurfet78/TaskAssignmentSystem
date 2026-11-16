@@ -36,7 +36,7 @@ public class ReportService {
                 .divide(BigDecimal.valueOf(total), 1, RoundingMode.HALF_UP);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public TaskStatisticsResponse getTaskStatistics() {
         Map<TaskStatus, Long> counts = new EnumMap<>(TaskStatus.class);
         reportRepository.countTasksByStatus()
