@@ -39,6 +39,11 @@ class PaginationApiIntegrationTest extends AbstractApiTest {
         }
     }
 
+    private long createTaskWithPriority(String title, String priority) {
+        return number(bodyOf(post(TASKS, Map.of("title", title, "priority", priority))
+                .expectStatus().isCreated()), "id");
+    }
+
     @SuppressWarnings("unchecked")
     private List<Long> idsOf(ResponseSpec spec) {
         Map<String, Object> body = bodyOf(spec.expectStatus().isOk());
@@ -303,5 +308,109 @@ class PaginationApiIntegrationTest extends AbstractApiTest {
         }
 
         assertEquals(25, new HashSet<>(ids).size());
+    }
+
+    @Test
+    void tasks_filterByAssignee_includesDoneTasks() {
+        long java = createSkill("Java");
+        long dev = createDeveloper("dev@example.com", java);
+        long other = createDeveloper("other@example.com", java);
+        long active = createTask("Mine active", java);
+        long done = createTask("Mine done", java);
+        long foreign = createTask("Not mine", java);
+        createTask("Nobody", java);
+
+        assign(active, dev).expectStatus().isOk();
+        assign(done, dev).expectStatus().isOk();
+        patch(TASKS + "/{id}/status",
+                Map.of("newStatus", "DONE", "version", taskVersion(done)), done).expectStatus().isOk();
+        assign(foreign, other).expectStatus().isOk();
+
+        get(TASKS + "?assigneeId={id}", dev)
+                .expectStatus().isOk()
+                .expectBody().jsonPath("$.totalElements").isEqualTo(2);
+
+        get(TASKS + "?assigneeId={id}&status=IN_PROGRESS", dev)
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.totalElements").isEqualTo(1)
+                .jsonPath("$.content[0].title").isEqualTo("Mine active");
+    }
+
+    @Test
+    void tasks_unknownAssignee_returnsEmptyPage() {
+        createTasks(2);
+
+        get(TASKS + "?assigneeId=999")
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.totalElements").isEqualTo(0)
+                .jsonPath("$.content.length()").isEqualTo(0);
+    }
+
+    @Test
+    void tasks_filterByPriority() {
+        createTaskWithPriority("A", "HIGH");
+        createTaskWithPriority("B", "LOW");
+        createTaskWithPriority("C", "HIGH");
+
+        get(TASKS + "?priority=HIGH")
+                .expectStatus().isOk()
+                .expectBody().jsonPath("$.totalElements").isEqualTo(2);
+    }
+
+    @Test
+    void tasks_invalidPriority_returns400() {
+        get(TASKS + "?priority=URGENT").expectStatus().isBadRequest();
+    }
+
+    @Test
+    void tasks_searchByTitle_ignoresCase() {
+        createTask("Настроить CI");
+        createTask("Fix login");
+
+        get(TASKS + "?q=настроить").expectStatus().isOk()
+                .expectBody().jsonPath("$.totalElements").isEqualTo(1);
+        get(TASKS + "?q=LOGIN").expectStatus().isOk()
+                .expectBody().jsonPath("$.totalElements").isEqualTo(1);
+    }
+
+    @Test
+    void tasks_searchByTitle_wildcardsAreLiteral() {
+        createTask("100% done");
+        createTask("a_c");
+        createTask("abc");
+
+        get(TASKS + "?q={q}", "%").expectStatus().isOk()
+                .expectBody().jsonPath("$.totalElements").isEqualTo(1);
+        get(TASKS + "?q={q}", "_").expectStatus().isOk()
+                .expectBody().jsonPath("$.totalElements").isEqualTo(1);
+    }
+
+    @Test
+    void tasks_blankQuery_isIgnored() {
+        createTasks(3);
+
+        get(TASKS + "?q={q}", " ")
+                .expectStatus().isOk()
+                .expectBody().jsonPath("$.totalElements").isEqualTo(3);
+    }
+
+    @Test
+    void tasks_combinedFilters_applyAsAnd() {
+        createTaskWithPriority("Fix bug", "HIGH");
+        createTaskWithPriority("Fix typo", "LOW");
+        createTaskWithPriority("Write docs", "HIGH");
+
+        get(TASKS + "?priority=HIGH&q=fix")
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.totalElements").isEqualTo(1)
+                .jsonPath("$.content[0].title").isEqualTo("Fix bug");
+    }
+
+    @Test
+    void tasks_tooLongQuery_returns400() {
+        get(TASKS + "?q={q}", "x".repeat(201)).expectStatus().isBadRequest();
     }
 }
