@@ -52,6 +52,12 @@ class PaginationApiIntegrationTest extends AbstractApiTest {
                 .toList();
     }
 
+    private long createDeveloperNamed(String first, String last, String email) {
+        return number(bodyOf(post(DEVELOPERS,
+                Map.of("firstName", first, "lastName", last, "email", email))
+                .expectStatus().isCreated()), "id");
+    }
+
     // =====================================================================
     // Задачи
     // =====================================================================
@@ -412,5 +418,50 @@ class PaginationApiIntegrationTest extends AbstractApiTest {
     @Test
     void tasks_tooLongQuery_returns400() {
         get(TASKS + "?q={q}", "x".repeat(201)).expectStatus().isBadRequest();
+    }
+
+    @Test
+    void developers_search_byNameFullNameAndEmail() {
+        long alexey = createDeveloperNamed("Алексей", "Иванов", "a.ivanov@example.com");
+        createDeveloperNamed("Мария", "Петрова", "maria@example.com");
+
+        for (String q : new String[]{"алексей", "ИВАНОВ", "алексей иванов", "a.ivanov@"}) {
+            get(DEVELOPERS + "?q={q}", q)
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.totalElements").isEqualTo(1)
+                    .jsonPath("$.content[0].id").isEqualTo(alexey);
+        }
+    }
+
+    @Test
+    void developers_search_withActiveOnly() {
+        createDeveloperNamed("Иван", "Один", "one@example.com");
+        long two = createDeveloperNamed("Иван", "Два", "two@example.com");
+        setActive(two, false).expectStatus().isOk();
+
+        get(DEVELOPERS + "?q=иван").expectStatus().isOk()
+                .expectBody().jsonPath("$.totalElements").isEqualTo(2);
+        get(DEVELOPERS + "?q=иван&activeOnly=true").expectStatus().isOk()
+                .expectBody().jsonPath("$.totalElements").isEqualTo(1);
+    }
+
+    @Test
+    void developers_search_wildcardIsLiteral() {
+        createDeveloperNamed("Иван", "Один", "one@example.com");
+        createDeveloperNamed("100%", "Скидка", "sale@example.com");
+
+        get(DEVELOPERS + "?q={q}", "%").expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.totalElements").isEqualTo(1)
+                .jsonPath("$.content[0].email").isEqualTo("sale@example.com");
+    }
+
+    @Test
+    void developers_search_noMatch_returnsEmptyPage() {
+        createDevelopers(3);
+
+        get(DEVELOPERS + "?q=nobody").expectStatus().isOk()
+                .expectBody().jsonPath("$.totalElements").isEqualTo(0);
     }
 }

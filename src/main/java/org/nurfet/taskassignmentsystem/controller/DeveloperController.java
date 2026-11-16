@@ -58,13 +58,15 @@ public class DeveloperController {
     }
 
     @Operation(summary = "Получить всех разработчиков",
-            description = "С параметром activeOnly=true возвращаются только активные.")
+            description = "activeOnly=true: только активные. "
+                    + "q: подстрока в имени, фамилии, «Имя Фамилия» или email без учёта регистра.")
     @GetMapping
     public ResponseEntity<PageResponse<DeveloperResponse>> getAll(
             @RequestParam(defaultValue = "false") boolean activeOnly,
+            @RequestParam(required = false) @Size(max = 100) String q,
             @ParameterObject @PageableDefault(size = 20, sort = "id") Pageable pageable) {
 
-        return ResponseEntity.ok(developerService.getAll(activeOnly, pageable));
+        return ResponseEntity.ok(developerService.getAll(activeOnly, q, pageable));
     }
 
     @Operation(summary = "Смена email разработчика")
