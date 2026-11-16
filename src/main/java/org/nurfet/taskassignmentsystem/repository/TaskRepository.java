@@ -1,10 +1,12 @@
 package org.nurfet.taskassignmentsystem.repository;
 
+import org.jspecify.annotations.NullMarked;
 import org.nurfet.taskassignmentsystem.domain.entity.Task;
-import org.nurfet.taskassignmentsystem.domain.enums.TaskStatus;
 import org.nurfet.taskassignmentsystem.repository.projection.AssigneeTaskCount;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -16,7 +18,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface TaskRepository extends JpaRepository<Task, Long> {
+public interface TaskRepository extends JpaRepository<Task, Long>, JpaSpecificationExecutor<Task> {
 
     @EntityGraph(attributePaths = {"requiredSkills", "assignee"})
     @Query("""
@@ -26,13 +28,10 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 """)
     Optional<Task> findByIdWithDetails(@Param("taskId")Long taskId);
 
+    @Override
     @EntityGraph(attributePaths = "assignee")
-    @Query(value = "select t from Task t", countQuery = "select count(t) from Task t")
-    Page<Task> findPage(Pageable pageable);
-
-    @EntityGraph(attributePaths = "assignee")
-    Page<Task> findByStatus(TaskStatus status, Pageable pageable);
-
+    @NullMarked
+    Page<Task> findAll(Specification<Task> spec, Pageable pageable);
 
     @Query("""
     select count(t)

@@ -16,6 +16,8 @@ import org.nurfet.taskassignmentsystem.mapper.TaskEventMapper;
 import org.nurfet.taskassignmentsystem.mapper.TaskMapper;
 import org.nurfet.taskassignmentsystem.repository.TaskRepository;
 import org.nurfet.taskassignmentsystem.repository.TaskStatusEventRepository;
+import org.nurfet.taskassignmentsystem.repository.spec.TaskFilter;
+import org.nurfet.taskassignmentsystem.repository.spec.TaskSpecifications;
 import org.nurfet.taskassignmentsystem.util.Validate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -208,14 +210,11 @@ public class TaskService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<TaskResponse> getAll(TaskStatus status, Pageable pageable) {
+    public PageResponse<TaskResponse> getAll(TaskFilter filter, Pageable pageable) {
         Validate.validateSort(pageable, SORTABLE_FIELDS);
         Pageable stable = Validate.withIdTiebreaker(pageable);
 
-        Page<Task> page = (status != null)
-                ? taskRepository.findByStatus(status, stable)
-                : taskRepository.findPage(stable);
-
+        Page<Task> page = taskRepository.findAll(TaskSpecifications.byFilter(filter), stable);
         return PageResponse.of(taskMapper.toResponseList(page.getContent()), page);
     }
 

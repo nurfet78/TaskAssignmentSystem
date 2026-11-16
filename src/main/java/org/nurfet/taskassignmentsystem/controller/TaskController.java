@@ -8,12 +8,14 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
+import org.nurfet.taskassignmentsystem.domain.enums.TaskPriority;
 import org.nurfet.taskassignmentsystem.domain.enums.TaskStatus;
 import org.nurfet.taskassignmentsystem.dto.request.AssignTaskRequest;
 import org.nurfet.taskassignmentsystem.dto.request.ChangeStatusRequest;
 import org.nurfet.taskassignmentsystem.dto.request.CreateTaskRequest;
 import org.nurfet.taskassignmentsystem.dto.request.UpdateTaskRequest;
 import org.nurfet.taskassignmentsystem.dto.response.*;
+import org.nurfet.taskassignmentsystem.repository.spec.TaskFilter;
 import org.nurfet.taskassignmentsystem.service.TaskService;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
@@ -76,15 +78,21 @@ public class TaskController {
 
     @Operation(summary = "Получить задачи (постранично)",
             description = "Параметры: page (с 0), size (до 100), sort (например, createdAt,desc). "
-                    + "С параметром status возвращаются только задачи в этом статусе.")
-    @ApiResponse(responseCode = "400", description = "Недопустимый статус или поле сортировки")
+                    + "Фильтры (комбинируются через И): status, priority, assigneeId "
+                    + "(включая завершённые и отменённые задачи исполнителя), "
+                    + "q (подстрока в названии без учёта регистра).")
+    @ApiResponse(responseCode = "400", description = "Недопустимое значение фильтра или поле сортировки")
     @GetMapping
     public ResponseEntity<PageResponse<TaskResponse>> getAll(
             @RequestParam(required = false) TaskStatus status,
+            @RequestParam(required = false) TaskPriority priority,
+            @RequestParam(required = false) Long assigneeId,
+            @RequestParam(required = false) @Size(max = 200) String q,
             @ParameterObject @PageableDefault(size = 20, sort = {"createdAt", "id"},
                     direction = Sort.Direction.DESC) Pageable pageable) {
 
-        return ResponseEntity.ok(taskService.getAll(status, pageable));
+        TaskFilter filter = new TaskFilter(status, priority, assigneeId, q);
+        return ResponseEntity.ok(taskService.getAll(filter, pageable));
     }
 
     @Operation(summary = "Получить неназначенные задачи (по приоритету)")
