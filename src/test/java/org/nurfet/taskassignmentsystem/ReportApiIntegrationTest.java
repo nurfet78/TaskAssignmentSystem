@@ -174,4 +174,37 @@ public class ReportApiIntegrationTest extends AbstractApiTest {
                 .expectStatus().isOk()
                 .expectBody().jsonPath("$.length()").isEqualTo(0);
     }
+
+    @Test
+    void statistics_byPriority_emptyDatabase_hasAllFourWithZeros() {
+        get(REPORTS + "/tasks/statistics")
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.byPriority.length()").isEqualTo(4)
+                .jsonPath("$.byPriority[0].priority").isEqualTo("CRITICAL")
+                .jsonPath("$.byPriority[1].priority").isEqualTo("HIGH")
+                .jsonPath("$.byPriority[2].priority").isEqualTo("MEDIUM")
+                .jsonPath("$.byPriority[3].priority").isEqualTo("LOW")
+                .jsonPath("$.byPriority[0].count").isEqualTo(0)
+                .jsonPath("$.byPriority[0].percent").value(Number.class, n -> assertNumber(0, n));
+    }
+
+    @Test
+    void statistics_byPriority_countsAllStatuses() {
+        createTaskWithPriority("C", "CRITICAL");
+        createTaskWithPriority("H", "HIGH");
+        createTask("M1");                                   // MEDIUM по умолчанию
+        long m2 = createTask("M2");
+        changeStatus(m2, "CANCELLED");                      // отменённые тоже считаются
+
+        get(REPORTS + "/tasks/statistics")
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.byPriority[0].count").isEqualTo(1)
+                .jsonPath("$.byPriority[0].percent").value(Number.class, n -> assertNumber(25.0, n))
+                .jsonPath("$.byPriority[1].count").isEqualTo(1)
+                .jsonPath("$.byPriority[2].count").isEqualTo(2)
+                .jsonPath("$.byPriority[2].percent").value(Number.class, n -> assertNumber(50.0, n))
+                .jsonPath("$.byPriority[3].count").isEqualTo(0);
+    }
 }
