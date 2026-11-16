@@ -191,10 +191,11 @@ public class DeveloperService {
     @Transactional(readOnly = true)
     public PageResponse<DeveloperResponse> getAll(boolean activeOnly, Pageable pageable) {
         Validate.validateSort(pageable, SORTABLE_FIELDS);
+        Pageable stable = Validate.withIdTiebreaker(pageable);
 
         Page<Developer> page = activeOnly
-                ? developerRepository.findByActiveTrue(pageable)
-                : developerRepository.findAll(pageable);
+                ? developerRepository.findByActiveTrue(stable)
+                : developerRepository.findAll(stable);
 
         // toResponses считает активные задачи одним запросом для всех разработчиков страницы
         return PageResponse.of(toResponses(page.getContent()), page);

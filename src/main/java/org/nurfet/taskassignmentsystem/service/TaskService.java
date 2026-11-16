@@ -210,10 +210,11 @@ public class TaskService {
     @Transactional(readOnly = true)
     public PageResponse<TaskResponse> getAll(TaskStatus status, Pageable pageable) {
         Validate.validateSort(pageable, SORTABLE_FIELDS);
+        Pageable stable = Validate.withIdTiebreaker(pageable);
 
         Page<Task> page = (status != null)
-                ? taskRepository.findByStatus(status, pageable)
-                : taskRepository.findPage(pageable);
+                ? taskRepository.findByStatus(status, stable)
+                : taskRepository.findPage(stable);
 
         return PageResponse.of(taskMapper.toResponseList(page.getContent()), page);
     }

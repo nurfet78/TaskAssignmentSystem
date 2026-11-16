@@ -1,6 +1,7 @@
 package org.nurfet.taskassignmentsystem.util;
 
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
@@ -54,5 +55,16 @@ public final class Validate {
                                         String.join(", ", new TreeSet<>(allowedFields))));
             }
         }
+    }
+
+    public static Pageable withIdTiebreaker(Pageable pageable) {
+        if (pageable.isUnpaged()
+            || pageable.getSort().stream()
+                .anyMatch(o -> o.getProperty().equals("id"))) {
+            return pageable;
+        }
+
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
+                pageable.getSort().and(Sort.by("id")));
     }
 }

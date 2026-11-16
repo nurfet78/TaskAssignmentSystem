@@ -164,7 +164,7 @@ public class SkillService {
     public PageResponse<SkillResponse> getAll(Pageable pageable) {
         Validate.validateSort(pageable, SORTABLE_FIELDS);
 
-        Page<Skill> page = skillRepository.findAll(pageable);
+        Page<Skill> page = skillRepository.findAll(Validate.withIdTiebreaker(pageable));
         return PageResponse.of(skillMapper.toResponseList(page.getContent()), page);
     }
 
