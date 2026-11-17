@@ -1,7 +1,5 @@
 package org.nurfet.taskassignmentsystem.exception;
 
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
-
 import lombok.Getter;
 
 @Getter

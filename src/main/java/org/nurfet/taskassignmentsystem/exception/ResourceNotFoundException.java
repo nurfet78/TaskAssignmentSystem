@@ -2,8 +2,6 @@ package org.nurfet.taskassignmentsystem.exception;
 
 import lombok.Getter;
 
-import javax.swing.*;
-
 @Getter
 public class ResourceNotFoundException extends DomainException {
 

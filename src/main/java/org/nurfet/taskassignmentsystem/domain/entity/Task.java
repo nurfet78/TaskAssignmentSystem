@@ -2,7 +2,6 @@ package org.nurfet.taskassignmentsystem.domain.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
@@ -11,7 +10,6 @@ import org.nurfet.taskassignmentsystem.domain.enums.TaskPriority;
 import org.nurfet.taskassignmentsystem.domain.enums.TaskStatus;
 import org.nurfet.taskassignmentsystem.exception.*;
 import org.nurfet.taskassignmentsystem.util.Validate;
-import org.springframework.core.codec.StringDecoder;
 
 import java.time.Instant;
 import java.util.HashSet;

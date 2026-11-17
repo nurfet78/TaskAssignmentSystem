@@ -27,8 +27,8 @@ public class ReportController {
     private final ReportService reportService;
 
     @Operation(summary = "Статистика задач",
-            description = "Распределение задач по статусам в штуках и процентах и время выполнения "
-                    + "(создание -> завершение) по приоритетам для задач в статусе DONE.")
+            description = "Распределение задач по статусам и по приоритетам (в штуках и процентах) "
+                    + "и время выполнения (создание -> завершение) по приоритетам для задач в статусе DONE.")
     @GetMapping("/tasks/statistics")
     public ResponseEntity<TaskStatisticsResponse> getTaskStatistics() {
         return ResponseEntity.ok(reportService.getTaskStatistics());
