@@ -8,7 +8,7 @@ public class TestTaskAssignmentSystemApplication {
     public static void main(String[] args) {
         SpringApplication
                 .from(TaskAssignmentSystemApplication::main)
-                .with(ContainersConfig.class)
+                .with(ContainersConfig.class, DevModeBannerConfig.class)
                 .withAdditionalProfiles("dev")
                 .run(args);
     }
